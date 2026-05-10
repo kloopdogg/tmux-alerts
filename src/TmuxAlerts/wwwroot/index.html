@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tmux-alerts</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+}
+header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+h1 { font-size: 16px; color: #58a6ff; letter-spacing: 1px; }
+.header-right { display: flex; gap: 16px; align-items: center; }
+.conn { font-size: 11px; color: #8b949e; }
+.conn.live { color: #3fb950; }
+.badge { font-size: 12px; padding: 2px 10px; border-radius: 10px; font-weight: 600; background: #da3633; color: #fff; }
+.badge.clear { background: #238636; }
+main { padding: 24px; max-width: 860px; margin: 0 auto; }
+section { margin-bottom: 32px; }
+h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #8b949e; margin-bottom: 12px; }
+.sessions { display: flex; flex-wrap: wrap; gap: 8px; }
+.session {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.2s;
+}
+.session.waiting { border-color: #f85149; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #3fb950; flex-shrink: 0; }
+.dot.waiting { background: #f85149; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+.sname { color: #e6edf3; font-weight: 600; }
+.starget { color: #8b949e; font-size: 11px; margin-left: 2px; }
+.notif {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-left: 3px solid #f85149;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    animation: slidein 0.2s ease-out;
+}
+@keyframes slidein { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.nmeta { font-size: 11px; color: #8b949e; margin-bottom: 5px; }
+.nmsg { color: #e6edf3; font-size: 14px; line-height: 1.5; word-break: break-word; }
+.nactions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+button {
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.15s;
+}
+.bdismiss { color: #8b949e; border-color: #30363d; }
+.bdismiss:hover { background: #30363d55; }
+.empty { color: #8b949e; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+    <h1>tmux-alerts</h1>
+    <div class="header-right">
+        <span class="conn" id="conn">○ connecting</span>
+        <span class="badge clear" id="badge">0 pending</span>
+    </div>
+</header>
+<main>
+    <section>
+        <h2>Sessions</h2>
+        <div class="sessions" id="sessions"><span class="empty">Waiting for Claude sessions...</span></div>
+    </section>
+    <section>
+        <h2>Notifications</h2>
+        <div id="notifs"><span class="empty">All clear.</span></div>
+    </section>
+</main>
+<script>
+let prevCount = 0;
+
+function chime() {
+    try {
+        const ac = new AudioContext();
+        [[880, 0], [1100, 0.13]].forEach(([freq, delay]) => {
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.frequency.value = freq;
+            const t = ac.currentTime + delay;
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            osc.start(t);
+            osc.stop(t + 0.35);
+        });
+    } catch(_) {}
+}
+
+function ago(iso) {
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (s < 60)   return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function esc(s) {
+    return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+}
+
+function render(state) {
+    const count = state.notifications.length;
+    const waitingIds = new Set(state.notifications.map(n => n.sessionId));
+
+    // badge + title
+    const badge = document.getElementById('badge');
+    badge.textContent = `${count} pending`;
+    badge.className = count > 0 ? 'badge' : 'badge clear';
+    document.title = count > 0 ? `(${count}) tmux-alerts` : 'tmux-alerts';
+
+    // sessions
+    const sessEl = document.getElementById('sessions');
+    if (!state.sessions.length) {
+        sessEl.innerHTML = '<span class="empty">Waiting for Claude sessions...</span>';
+    } else {
+        sessEl.innerHTML = state.sessions.map(s => {
+            const w = waitingIds.has(s.sessionId);
+            return `<div class="session${w?' waiting':''}">
+                <div class="dot${w?' waiting':''}"></div>
+                <span class="sname">${esc(s.project)}</span>
+                <span class="starget">${esc(s.tmuxTarget)}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // notifications
+    const nEl = document.getElementById('notifs');
+    if (!state.notifications.length) {
+        nEl.innerHTML = '<span class="empty">All clear.</span>';
+    } else {
+        nEl.innerHTML = state.notifications.map(n => `
+            <div class="notif" id="n-${n.id}">
+                <div>
+                    <div class="nmeta">${esc(n.project)} &nbsp;·&nbsp; ${ago(n.receivedAt)} &nbsp;·&nbsp; ${esc(n.hookType)}</div>
+                    <div class="nmsg">${esc(n.message)}</div>
+                </div>
+                <div class="nactions">
+                    <button class="bdismiss" onclick="dismiss('${n.id}')">Dismiss</button>
+                </div>
+            </div>`).join('');
+    }
+
+    if (count > prevCount) chime();
+    prevCount = count;
+}
+
+async function dismiss(id) { await fetch(`/dismiss/${id}`, { method: 'POST' }); }
+
+function connect() {
+    const ws  = new WebSocket(`ws://${location.host}/ws`);
+    const con = document.getElementById('conn');
+
+    ws.onopen    = () => { con.textContent = '● live'; con.className = 'conn live'; };
+    ws.onmessage = e => render(JSON.parse(e.data));
+    ws.onclose   = () => {
+        con.textContent = '○ reconnecting';
+        con.className = 'conn';
+        setTimeout(connect, 2000);
+    };
+    ws.onerror = () => ws.close();
+}
+
+connect();
+</script>
+</body>
+</html>

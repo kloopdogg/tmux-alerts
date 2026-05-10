@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/notify-copilot.sh",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "agentStop" }
+      }
+    ],
+    "notification": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/notify-copilot.sh",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "notification" }
+      }
+    ],
+    "permissionRequest": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/notify-copilot.sh",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "permissionRequest" }
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/notify-copilot.sh",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "errorOccurred" }
+      }
+    ]
+  }
+}
