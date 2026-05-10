@@ -1,27 +1,23 @@
 # tmux-alerts
 
-Notification system for parallel Claude Code sessions. Plays a sound and shows an alert when Claude needs your attention. One click jumps your terminal to the right pane.
+Notification system for parallel AI coding sessions. Plays a sound and shows an alert when the agent needs your attention. One click jumps your terminal to the right pane.
 
-## Quick Start
+## Requirements
 
-### 1. Start the server
+- .NET 8 SDK
+- tmux
+- jq (for the hook scripts)
+- curl
 
-```bash
-cd src/TmuxAlerts
-dotnet run
-```
+## Configuration
 
-Open http://localhost:7777 in a browser and leave the tab open.
-
-### 2. Install the hook script
+### Claude
 
 ```bash
 mkdir -p ~/.claude/hooks
 cp hooks/notify.sh ~/.claude/hooks/notify.sh
 chmod +x ~/.claude/hooks/notify.sh
 ```
-
-### 3. Wire up Claude Code hooks
 
 Add to `~/.claude/settings.json`:
 
@@ -44,18 +40,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-### 4. Open Claude sessions in tmux
-
-```bash
-tmux new-session -s work
-# Split into panes, start claude in each
-```
-
-That's it. Claude stops → chime plays → dashboard lights up → click Jump → terminal switches pane.
-
----
-
-## GitHub Copilot CLI
+### Copilot
 
 ```bash
 mkdir -p ~/.copilot/hooks
@@ -66,6 +51,26 @@ cp .github/hooks/hooks.json ~/.copilot/hooks/hooks.json
 
 Fires on `agentStop`, `notification`, `permissionRequest`, and `errorOccurred`.
 
+## Quick Start
+
+### 1. Start the server
+
+```bash
+cd src/TmuxAlerts
+dotnet run
+```
+
+Open http://localhost:7777 in a browser and leave the tab open.
+
+### 2. Open sessions in tmux
+
+```bash
+tmux new-session -s work
+# Split into panes, start claude or copilot in each
+```
+
+That's it. Agent stops → chime plays → dashboard lights up → click Jump → terminal switches pane.
+
 ## Build self-contained binary
 
 ```bash
@@ -73,10 +78,3 @@ cd src/TmuxAlerts
 dotnet publish -r osx-arm64 --self-contained -o ./publish
 ./publish/TmuxAlerts
 ```
-
-## Requirements
-
-- .NET 8 SDK
-- tmux
-- jq (for the hook script)
-- curl

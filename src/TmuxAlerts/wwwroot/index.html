@@ -102,23 +102,23 @@ button {
 </main>
 <script>
 let prevCount = 0;
+const ac = new AudioContext();
+document.addEventListener('click', () => ac.state === 'suspended' && ac.resume(), { once: true });
 
 function chime() {
-    try {
-        const ac = new AudioContext();
-        [[880, 0], [1100, 0.13]].forEach(([freq, delay]) => {
-            const osc = ac.createOscillator();
-            const gain = ac.createGain();
-            osc.connect(gain);
-            gain.connect(ac.destination);
-            osc.frequency.value = freq;
-            const t = ac.currentTime + delay;
-            gain.gain.setValueAtTime(0.18, t);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-            osc.start(t);
-            osc.stop(t + 0.35);
-        });
-    } catch(_) {}
+    if (ac.state !== 'running') return;
+    [[880, 0], [1100, 0.13]].forEach(([freq, delay]) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.frequency.value = freq;
+        const t = ac.currentTime + delay;
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.start(t);
+        osc.stop(t + 0.35);
+    });
 }
 
 function ago(iso) {
