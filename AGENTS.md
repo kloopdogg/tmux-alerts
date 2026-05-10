@@ -35,7 +35,7 @@ var wsLock = new object();
 | State | In-memory only | Single user, local tool; restarts are acceptable |
 | Frontend | Vanilla JS, no framework, no build step | Nothing to justify the overhead |
 | Port | 7777 | Decided; don't suggest changing it |
-| Platform | macOS first, WSL later | Same architecture; add WSL support when asked |
+| Platform | macOS and WSL | Same architecture; only the publish RID differs (`osx-arm64` vs `linux-x64`) |
 
 ## File layout
 

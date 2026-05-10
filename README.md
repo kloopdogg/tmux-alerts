@@ -75,6 +75,12 @@ That's it. Agent stops → chime plays → dashboard lights up → click Jump �
 
 ```bash
 cd src/TmuxAlerts
+
+# macOS (Apple Silicon)
 dotnet publish -r osx-arm64 --self-contained -o ./publish
+
+# WSL / Linux
+dotnet publish -r linux-x64 --self-contained -o ./publish
+
 ./publish/TmuxAlerts
 ```

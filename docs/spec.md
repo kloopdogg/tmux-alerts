@@ -245,24 +245,24 @@ Single HTML file. No build step. No framework. Vanilla JS.
 ### Layout
 
 ```
-┌─────────────────────────────────────────┐
+┌──────────────────────────────────────────┐
 │  tmux-alerts          ● 2 need attention │
-├─────────────────────────────────────────┤
+├──────────────────────────────────────────┤
 │ ACTIVE SESSIONS                          │
 │  ● api-service      pane %1  [idle]      │
 │  ● web-frontend     pane %2  [idle]      │
 │  ▲ data-pipeline    pane %3  [waiting]   │
 │  ● auth-service     pane %4  [idle]      │
-├─────────────────────────────────────────┤
+├──────────────────────────────────────────┤
 │ NOTIFICATIONS                            │
-│  [!] data-pipeline — 2:14pm             │
-│  "Which S3 bucket should I write to?"   │
+│  [!] data-pipeline — 2:14pm              │
+│  "Which S3 bucket should I write to?"    │
 │                    [Jump] [Dismiss]      │
 │                                          │
-│  [!] data-pipeline — 2:09pm             │
+│  [!] data-pipeline — 2:09pm              │
 │  "Claude stopped"                        │
 │                    [Jump] [Dismiss]      │
-└─────────────────────────────────────────┘
+└──────────────────────────────────────────┘
 ```
 
 ### Behavior
@@ -280,13 +280,15 @@ Single HTML file. No build step. No framework. Vanilla JS.
 
 ```
 tmux-alerts/
+├── .github/
+│   └── hooks/
+│       └── hooks.json
 ├── docs/
 │   ├── vision.md
 │   └── spec.md
 ├── hooks/
 │   ├── notify.sh
 │   └── notify-copilot.sh
-├── hooks.json
 ├── src/
 │   └── TmuxAlerts/
 │       ├── TmuxAlerts.csproj
@@ -308,20 +310,18 @@ cd src/TmuxAlerts && dotnet run
 # Build self-contained binary for Mac
 dotnet publish -r osx-arm64 --self-contained -o ./publish
 
-# Install hooks (one-time)
+# Install claude hooks (one-time)
 mkdir -p ~/.claude/hooks
 cp hooks/notify.sh ~/.claude/hooks/
 cp hooks/register.sh ~/.claude/hooks/
 chmod +x ~/.claude/hooks/*.sh
 # Then add hook config to ~/.claude/settings.json
+
+# Install copilot hooks (one-time)
+mkdir -p ~/.copilot/hooks
+cp hooks/notify-copilot.sh ~/.copilot/hooks/
+chmod +x ~/.copilot/hooks/notify-copilot.sh
+cp .github/hooks/hooks.json ~/.copilot/hooks/
+# hooks.json wires agentStop, notification, permissionRequest, and errorOccurred to notify-copilot.sh
+
 ```
-
----
-
-## Out of Scope (for now)
-
-- Sending responses back to Claude from the dashboard
-- WSL / Windows support (same architecture, different tmux target format — add later)
-- Persistent notification history (in-memory only; restarts clear it)
-- Authentication (localhost only, single user)
-- Multiple machines / remote relay

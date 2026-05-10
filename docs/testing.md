@@ -97,7 +97,7 @@ Start Claude in a tmux pane. Any time it stops or sends a notification, the dash
 Copy `hooks.json` to your home directory (user-level hooks) or to any project root:
 
 ```bash
-cp hooks.json ~/.copilot/hooks/hooks.json
+cp .github/hooks/hooks.json ~/.copilot/hooks/hooks.json
 ```
 
 Test the Copilot hook script directly by piping the JSON format Copilot sends:
