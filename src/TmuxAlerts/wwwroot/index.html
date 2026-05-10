@@ -96,7 +96,7 @@ button {
         <div class="sessions" id="sessions"><span class="empty">Waiting for Claude sessions...</span></div>
     </section>
     <section>
-        <h2>Notifications</h2>
+        <h2>Notifications <button class="bdismiss" id="dismiss-all" style="display:none" onclick="dismissAll()">Dismiss All</button></h2>
         <div id="notifs"><span class="empty">All clear.</span></div>
     </section>
 </main>
@@ -163,6 +163,7 @@ function render(state) {
 
     // notifications
     const nEl = document.getElementById('notifs');
+    document.getElementById('dismiss-all').style.display = state.notifications.length ? '' : 'none';
     if (!state.notifications.length) {
         nEl.innerHTML = '<span class="empty">All clear.</span>';
     } else {
@@ -183,6 +184,7 @@ function render(state) {
 }
 
 async function dismiss(id) { await fetch(`/dismiss/${id}`, { method: 'POST' }); }
+async function dismissAll() { await fetch('/dismiss-all', { method: 'POST' }); }
 
 function connect() {
     const ws  = new WebSocket(`ws://${location.host}/ws`);

@@ -60,6 +60,16 @@ app.MapPost("/dismiss/{id}", async (string id) =>
     return Results.Ok();
 });
 
+// Dashboard: dismiss all without jumping
+app.MapPost("/dismiss-all", async () =>
+{
+    foreach (var id in notifications.Keys)
+        if (notifications.TryGetValue(id, out var n) && !n.Dismissed)
+            notifications[id] = n with { Dismissed = true };
+    await Broadcast();
+    return Results.Ok();
+});
+
 // Dashboard: initial state on load
 app.MapGet("/state", () => Results.Json(CurrentState(), jsonOptions));
 
