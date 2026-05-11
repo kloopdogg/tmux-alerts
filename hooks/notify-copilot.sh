@@ -6,9 +6,10 @@
 
 INPUT=$(cat)
 
-SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId // "unknown"')
+SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId // .session_id // ""')
+SESSION_ID=${SESSION_ID:-unknown}
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
-PROJECT=$(basename "$CWD" 2>/dev/null)
+PROJECT=$(basename "$CWD")
 PROJECT=${PROJECT:-unknown}
 HOOK_TYPE=${HOOK_EVENT:-unknown}
 

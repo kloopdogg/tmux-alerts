@@ -4,11 +4,14 @@
 
 INPUT=$(cat)
 
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id     // "unknown"')
-MESSAGE=$(echo "$INPUT"    | jq -r '.message         // "Claude stopped"')
-HOOK_TYPE=$(echo "$INPUT"  | jq -r '.hook_event_name // "unknown"')
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id     // ""')
+SESSION_ID=${SESSION_ID:-unknown}
+MESSAGE=$(echo "$INPUT"    | jq -r '.message         // ""')
+MESSAGE=${MESSAGE:-"Claude stopped"}
+HOOK_TYPE=$(echo "$INPUT"  | jq -r '.hook_event_name // ""')
+HOOK_TYPE=${HOOK_TYPE:-unknown}
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
-PROJECT=$(basename "$CWD" 2>/dev/null)
+PROJECT=$(basename "$CWD")
 PROJECT=${PROJECT:-unknown}
 
 # Find the tmux pane whose current directory matches the project cwd.

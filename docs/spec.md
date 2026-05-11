@@ -32,7 +32,7 @@ Claude Code fires hooks by writing a JSON payload to a script's stdin. Hooks are
 }
 ```
 
-### Hook Script: `hooks/notify.sh`
+### Hook Script: `hooks/notify-claude.sh`
 
 ```bash
 #!/bin/bash
@@ -77,13 +77,13 @@ curl -s -X POST http://localhost:7777/register \
     "Notification": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }]
       }
     ]
   }
@@ -118,7 +118,7 @@ Copilot CLI hooks are configured via `hooks.json`, placed at `~/.copilot/hooks/h
 
 ### Hook Script: `hooks/notify-copilot.sh`
 
-Install to `~/.copilot/hooks/notify-copilot.sh`. Reads the same fields as `notify.sh` where available; synthesizes the rest. `HOOK_EVENT` is injected via the `env` field in `hooks.json`.
+Install to `~/.copilot/hooks/notify-copilot.sh`. Reads the same fields as `notify-claude.sh` where available; synthesizes the rest. `HOOK_EVENT` is injected via the `env` field in `hooks.json`.
 
 ### Configuration: `hooks.json`
 
@@ -287,7 +287,7 @@ tmux-alerts/
 │   ├── vision.md
 │   └── spec.md
 ├── hooks/
-│   ├── notify.sh
+│   ├── notify-claude.sh
 │   └── notify-copilot.sh
 ├── src/
 │   └── TmuxAlerts/
@@ -312,7 +312,7 @@ dotnet publish -r osx-arm64 --self-contained -o ./publish
 
 # Install claude hooks (one-time)
 mkdir -p ~/.claude/hooks
-cp hooks/notify.sh ~/.claude/hooks/
+cp hooks/notify-claude.sh ~/.claude/hooks/
 cp hooks/register.sh ~/.claude/hooks/
 chmod +x ~/.claude/hooks/*.sh
 # Then add hook config to ~/.claude/settings.json

@@ -57,7 +57,7 @@ echo '{
   "message": "Fired from the actual hook script",
   "hook_event_name": "Notification",
   "cwd": "/Users/scott/Projects/my-api"
-}' | bash hooks/notify.sh
+}' | bash hooks/notify-claude.sh
 ```
 
 Expected: notification appears in the dashboard.
@@ -68,9 +68,9 @@ Expected: notification appears in the dashboard.
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/notify.sh ~/.claude/hooks/notify.sh
+cp hooks/notify-claude.sh ~/.claude/hooks/notify-claude.sh
 cp hooks/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
-chmod +x ~/.claude/hooks/notify.sh ~/.copilot/hooks/notify-copilot.sh
+chmod +x ~/.claude/hooks/notify-claude.sh ~/.copilot/hooks/notify-copilot.sh
 ```
 
 Add to `~/.claude/settings.json` (merge with existing content):
@@ -79,10 +79,10 @@ Add to `~/.claude/settings.json` (merge with existing content):
 {
   "hooks": {
     "Notification": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }] }
+      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
     ],
     "Stop": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }] }
+      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
     ]
   }
 }

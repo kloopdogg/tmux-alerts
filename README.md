@@ -15,8 +15,8 @@ Notification system for parallel AI coding sessions. Plays a sound and shows an 
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/notify.sh ~/.claude/hooks/notify.sh
-chmod +x ~/.claude/hooks/notify.sh
+cp hooks/notify-claude.sh ~/.claude/hooks/notify-claude.sh
+chmod +x ~/.claude/hooks/notify-claude.sh
 ```
 
 Add to `~/.claude/settings.json`:
@@ -27,13 +27,13 @@ Add to `~/.claude/settings.json`:
     "Notification": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }]
       }
     ]
   }
@@ -70,6 +70,26 @@ tmux new-session -s work
 ```
 
 That's it. Agent stops → chime plays → dashboard lights up → click Jump → terminal switches pane.
+
+## Run with Docker / Podman
+
+```bash
+podman compose up --build
+```
+
+Or detached:
+
+```bash
+podman compose up --build
+```
+
+Stop:
+
+```bash
+podman compose down
+```
+
+Works with `docker compose` as well - same commands.
 
 ## Build self-contained binary
 

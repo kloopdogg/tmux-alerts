@@ -40,7 +40,7 @@ var wsLock = new object();
 ## File layout
 
 ```
-hooks/notify.sh              ← install to ~/.claude/hooks/, fires on Stop + Notification
+hooks/notify-claude.sh              ← install to ~/.claude/hooks/, fires on Stop + Notification
 hooks/notify-copilot.sh      ← install to ~/.copilot/hooks/, fires on agentStop + notification + permissionRequest + errorOccurred
 .github/hooks/hooks.json     ← template: copy to ~/.copilot/hooks/ for user-level Copilot hooks
 src/TmuxAlerts/Program.cs    ← everything in one file: state, endpoints, broadcast, models

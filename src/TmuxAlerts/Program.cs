@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -42,16 +41,7 @@ app.MapPost("/notify", async (NotifyRequest req) =>
     return Results.Ok();
 });
 
-// Dashboard: jump to tmux pane then dismiss
-app.MapPost("/jump/{id}", async (string id) =>
-{
-    if (!notifications.TryGetValue(id, out var n)) return Results.NotFound();
-    notifications[id] = n with { Dismissed = true };
-    await Broadcast();
-    return Results.Ok();
-});
-
-// Dashboard: dismiss without jumping
+// Dashboard: dismiss notification
 app.MapPost("/dismiss/{id}", async (string id) =>
 {
     if (!notifications.TryGetValue(id, out var n)) return Results.NotFound();
@@ -60,7 +50,7 @@ app.MapPost("/dismiss/{id}", async (string id) =>
     return Results.Ok();
 });
 
-// Dashboard: dismiss all without jumping
+// Dashboard: dismiss all notifications
 app.MapPost("/dismiss-all", async () =>
 {
     foreach (var id in notifications.Keys)
@@ -98,8 +88,8 @@ app.Map("/ws", async (HttpContext ctx) =>
     try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None); } catch { }
 });
 
-Console.WriteLine("tmux-alerts  ●  http://localhost:7777");
-app.Run("http://localhost:7777");
+Console.WriteLine("tmux-alerts  >  http://localhost:7777");
+app.Run("http://0.0.0.0:7777");
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
