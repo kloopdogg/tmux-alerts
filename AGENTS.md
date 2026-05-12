@@ -2,7 +2,7 @@
 
 ## What this is
 
-A local notification system for parallel Claude Code sessions in tmux. When Claude stops or needs input, a hook script POSTs to a C# server, which pushes an alert to a browser dashboard via WebSocket. The user clicks Jump; the server runs `tmux select-pane` to switch panes.
+A local notification system for parallel AI coding sessions. When Claude or Copilot stops or needs input, a hook script POSTs to a C# server, which pushes an alert to a browser dashboard via WebSocket. Three hook variants cover tmux (pane flash), macOS/Linux/WSL (OS notification), and Windows (PowerShell balloon tip).
 
 ## Coding rules
 
@@ -35,22 +35,30 @@ var wsLock = new object();
 | State | In-memory only | Single user, local tool; restarts are acceptable |
 | Frontend | Vanilla JS, no framework, no build step | Nothing to justify the overhead |
 | Port | 7777 | Decided; don't suggest changing it |
-| Platform | macOS and WSL | Same architecture; only the publish RID differs (`osx-arm64` vs `linux-x64`) |
+| Platform | macOS, Linux, WSL, Windows | Same server; hook variant differs per platform |
 
 ## File layout
 
 ```
-hooks/notify-claude.sh              ← install to ~/.claude/hooks/, fires on Stop + Notification
-hooks/notify-copilot.sh      ← install to ~/.copilot/hooks/, fires on agentStop + notification + permissionRequest + errorOccurred
-.github/hooks/hooks.json     ← template: copy to ~/.copilot/hooks/ for user-level Copilot hooks
-src/TmuxAlerts/Program.cs    ← everything in one file: state, endpoints, broadcast, models
-src/TmuxAlerts/wwwroot/index.html  ← full dashboard, single HTML file
+hooks/tmux/notify-claude.sh          ← tmux: pane flash + notify, fires on Stop + Notification
+hooks/tmux/notify-copilot.sh         ← tmux: pane flash + notify, fires on agentStop + notification + permissionRequest + errorOccurred
+hooks/linux-mac-wsl/notify-claude.sh ← non-tmux: OS notification + notify (macOS/Linux/WSL)
+hooks/linux-mac-wsl/notify-copilot.sh ← non-tmux: OS notification + notify (macOS/Linux/WSL)
+hooks/windows/notify-claude.ps1      ← Windows: balloon tip + notify (PowerShell)
+hooks/windows/notify-copilot.ps1     ← Windows: balloon tip + notify (PowerShell)
+.github/hooks/hooks.json             ← Copilot hooks template: copy to ~/.copilot/hooks/
+src/TmuxAlerts/Program.cs            ← everything in one file: state, endpoints, broadcast, models
+src/TmuxAlerts/wwwroot/index.html    ← full dashboard, single HTML file
+src/TmuxAlerts/wwwroot/icons/        ← agent + client icon PNGs (replace placeholders with real assets)
 ```
 
 ## Key behaviors
 
 - Sessions auto-register via `/notify` — no separate register step required
-- `tmuxTarget` is `$TMUX_PANE` (e.g. `%3`) — unique global pane ID set by tmux
+- `tmuxTarget` is the tmux pane ID (e.g. `%3`); empty for non-tmux clients
+- Each notification and session carries `agent` (claude/copilot) and `client` (tmux/terminal/vscode/claude-desktop)
+- Hook client detection: VS Code check runs before tmux lookup — VS Code launched from a tmux pane must not be reported as tmux
+- Sessions can be manually removed via `DELETE /session/{id}` — they reappear on the next hook fire
 - Hook script uses `|| true` and `--max-time 2` — Claude must never fail due to server being down
 - WebSocket broadcast is serialized via `SemaphoreSlim` to avoid interleaved sends
 - Dashboard plays a two-tone Web Audio API chime on new notifications — no audio file needed

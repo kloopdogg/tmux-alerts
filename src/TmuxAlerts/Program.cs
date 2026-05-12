@@ -21,7 +21,7 @@ app.UseStaticFiles();
 // Hook: register or update a session
 app.MapPost("/register", async (RegisterRequest req) =>
 {
-    sessions[req.SessionId] = new Session(req.SessionId, req.TmuxTarget, req.Project, DateTime.UtcNow);
+    sessions[req.SessionId] = new Session(req.SessionId, req.TmuxTarget, req.Project, DateTime.UtcNow, null, null);
     await Broadcast();
     return Results.Ok();
 });
@@ -31,12 +31,20 @@ app.MapPost("/notify", async (NotifyRequest req) =>
 {
     sessions.AddOrUpdate(
         req.SessionId,
-        new Session(req.SessionId, req.TmuxTarget, req.Project, DateTime.UtcNow),
-        (_, existing) => existing with { TmuxTarget = req.TmuxTarget, Project = req.Project }
+        new Session(req.SessionId, req.TmuxTarget, req.Project, DateTime.UtcNow, req.Agent, req.Client),
+        (_, existing) => existing with { TmuxTarget = req.TmuxTarget, Project = req.Project, Agent = req.Agent, Client = req.Client }
     );
 
     var id = Guid.NewGuid().ToString("N");
-    notifications[id] = new Notification(id, req.SessionId, req.Message, req.HookType, req.Project, DateTime.UtcNow, false);
+    notifications[id] = new Notification(id, req.SessionId, req.Message, req.HookType, req.Project, req.TmuxTarget, DateTime.UtcNow, false, req.Agent, req.Client);
+    await Broadcast();
+    return Results.Ok();
+});
+
+// Dashboard: remove session
+app.MapDelete("/session/{id}", async (string id) =>
+{
+    sessions.TryRemove(id, out _);
     await Broadcast();
     return Results.Ok();
 });
@@ -128,7 +136,7 @@ async Task Broadcast()
 
 // ── models ───────────────────────────────────────────────────────────────────
 
-record Session(string SessionId, string TmuxTarget, string Project, DateTime RegisteredAt);
-record Notification(string Id, string SessionId, string Message, string HookType, string Project, DateTime ReceivedAt, bool Dismissed);
+record Session(string SessionId, string TmuxTarget, string Project, DateTime RegisteredAt, string? Agent, string? Client);
+record Notification(string Id, string SessionId, string Message, string HookType, string Project, string TmuxTarget, DateTime ReceivedAt, bool Dismissed, string? Agent, string? Client);
 record RegisterRequest(string SessionId, string TmuxTarget, string Project);
-record NotifyRequest(string SessionId, string Message, string HookType, string Project, string TmuxTarget);
+record NotifyRequest(string SessionId, string Message, string HookType, string Project, string TmuxTarget, string? Agent, string? Client);

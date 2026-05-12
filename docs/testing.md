@@ -16,14 +16,14 @@ Open **http://localhost:7777**. Confirm the dashboard shows "Waiting for Claude 
 ```bash
 curl -s -X POST http://localhost:7777/notify \
   -H "Content-Type: application/json" \
-  -d '{"sessionId":"abc123","message":"Which S3 bucket should I write to?","hookType":"Notification","project":"data-pipeline","tmuxTarget":""}'
+  -d '{"sessionId":"abc123","message":"Which S3 bucket should I write to?","hookType":"Notification","project":"data-pipeline","tmuxTarget":"","agent":"claude","client":"terminal"}'
 ```
 
-Expected: chime plays, session card appears, notification appears. Click **Dismiss** to clear it.
+Expected: chime plays, session pill appears with agent and client icons, notification appears. Hover the pill to reveal the **✕** remove button. Click **Dismiss** to clear the notification.
 
 ---
 
-## Phase 3 — Test the Jump (requires tmux)
+## Phase 3 — Test tmux pane flash (requires tmux)
 
 ```bash
 tmux new-session -s work
@@ -42,14 +42,16 @@ Fire a notification targeting a real pane ID:
 ```bash
 curl -s -X POST http://localhost:7777/notify \
   -H "Content-Type: application/json" \
-  -d '{"sessionId":"abc123","message":"Need your input!","hookType":"Stop","project":"my-api","tmuxTarget":"%2"}'
+  -d '{"sessionId":"abc123","message":"Need your input!","hookType":"Stop","project":"my-api","tmuxTarget":"%2","agent":"claude","client":"tmux"}'
 ```
 
-Click **Jump** in the dashboard — terminal should switch to pane `%2`.
+Expected: pane `%2` flashes red, notification appears in the dashboard labelled **TMUX %2**.
 
 ---
 
 ## Phase 4 — Test the hook script directly
+
+### tmux
 
 ```bash
 echo '{
@@ -57,20 +59,38 @@ echo '{
   "message": "Fired from the actual hook script",
   "hook_event_name": "Notification",
   "cwd": "/Users/scott/Projects/my-api"
-}' | bash hooks/notify-claude.sh
+}' | bash hooks/tmux/notify-claude.sh
 ```
 
-Expected: notification appears in the dashboard.
+### macOS / Linux / WSL (non-tmux)
+
+```bash
+echo '{
+  "session_id": "hook-test",
+  "message": "Fired from the actual hook script",
+  "hook_event_name": "Notification",
+  "cwd": "/Users/scott/Projects/my-api"
+}' | bash hooks/linux-mac-wsl/notify-claude.sh
+```
+
+Expected: OS notification fires, notification appears in the dashboard.
 
 ---
 
 ## Phase 5 — Wire up real Claude Code hooks
 
+Pick the subfolder that matches your environment:
+
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/notify-claude.sh ~/.claude/hooks/notify-claude.sh
-cp hooks/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
-chmod +x ~/.claude/hooks/notify-claude.sh ~/.copilot/hooks/notify-copilot.sh
+
+# tmux
+cp hooks/tmux/notify-claude.sh ~/.claude/hooks/notify-claude.sh
+chmod +x ~/.claude/hooks/notify-claude.sh
+
+# macOS / Linux / WSL
+cp hooks/linux-mac-wsl/notify-claude.sh ~/.claude/hooks/notify-claude.sh
+chmod +x ~/.claude/hooks/notify-claude.sh
 ```
 
 Add to `~/.claude/settings.json` (merge with existing content):
@@ -78,6 +98,9 @@ Add to `~/.claude/settings.json` (merge with existing content):
 ```json
 {
   "hooks": {
+    "PermissionRequest": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
+    ],
     "Notification": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
     ],
@@ -88,19 +111,31 @@ Add to `~/.claude/settings.json` (merge with existing content):
 }
 ```
 
-Start Claude in a tmux pane. Any time it stops or sends a notification, the dashboard fires.
+Start Claude in your terminal. Any time it stops or sends a notification, the dashboard fires.
 
 ---
 
 ## Phase 6 — Wire up Copilot CLI hooks
 
-Copy `hooks.json` to your home directory (user-level hooks) or to any project root:
+```bash
+mkdir -p ~/.copilot/hooks
+
+# tmux
+cp hooks/tmux/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
+chmod +x ~/.copilot/hooks/notify-copilot.sh
+
+# macOS / Linux / WSL
+cp hooks/linux-mac-wsl/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
+chmod +x ~/.copilot/hooks/notify-copilot.sh
+```
+
+Copy a `hooks.json` to your home directory:
 
 ```bash
 cp .github/hooks/hooks.json ~/.copilot/hooks/hooks.json
 ```
 
-Test the Copilot hook script directly by piping the JSON format Copilot sends:
+Test the Copilot hook script directly:
 
 ```bash
 echo '{

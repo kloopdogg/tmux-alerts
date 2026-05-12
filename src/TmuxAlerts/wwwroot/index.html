@@ -48,8 +48,22 @@ h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #3fb950; flex-shrink: 0; }
 .dot.waiting { background: #f85149; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+.sicon { width: 16px; height: 16px; flex-shrink: 0; }
 .sname { color: #e6edf3; font-weight: 600; }
-.starget { color: #8b949e; font-size: 11px; margin-left: 2px; }
+.slabel { color: #8b949e; font-size: 11px; }
+.sremove {
+    background: none;
+    border: none;
+    padding: 0 0 0 6px;
+    font-size: 13px;
+    line-height: 1;
+    color: #8b949e;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.session:hover .sremove { opacity: 1; }
+.sremove:hover { color: #f85149; background: none; }
 .notif {
     background: #161b22;
     border: 1px solid #30363d;
@@ -64,9 +78,38 @@ h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #
     animation: slidein 0.2s ease-out;
 }
 @keyframes slidein { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-.nmeta { font-size: 11px; color: #8b949e; margin-bottom: 5px; }
-.nmsg { color: #e6edf3; font-size: 14px; line-height: 1.5; word-break: break-word; }
-.nactions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+.nleft { flex: 1; min-width: 0; }
+.ncontext {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.nicon { width: 18px; height: 18px; flex-shrink: 0; }
+.nlabel { font-size: 11px; color: #8b949e; }
+.nheader {
+    font-size: 14px;
+    color: #e6edf3;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-word;
+    margin-bottom: 4px;
+}
+.nmsg {
+    font-size: 11px;
+    color: #8b949e;
+    line-height: 1.4;
+    word-break: break-word;
+}
+.nactions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+.ntime { font-size: 11px; color: #8b949e; white-space: nowrap; }
 button {
     border: 1px solid;
     border-radius: 4px;
@@ -136,53 +179,75 @@ function esc(s) {
         .replace(/"/g,'&quot;');
 }
 
+function clientLabel(client, tmuxTarget) {
+    if (client === 'tmux') return `TMUX ${tmuxTarget || ''}`.trim();
+    if (client === 'vscode' || client === 'claude-desktop') return 'IDE';
+    return 'Terminal';
+}
+
+function icon(name, cls) {
+    if (!name) return '';
+    return `<img class="${cls}" src="/icons/${esc(name)}.png" alt="${esc(name)}" onerror="this.style.display='none'">`;
+}
+
 function render(state) {
     const count = state.notifications.length;
     const waitingIds = new Set(state.notifications.map(n => n.sessionId));
 
-    // badge + title
     const badge = document.getElementById('badge');
     badge.textContent = `${count} pending`;
     badge.className = count > 0 ? 'badge' : 'badge clear';
     document.title = count > 0 ? `(${count}) tmux-alerts` : 'tmux-alerts';
 
-    // sessions
     const sessEl = document.getElementById('sessions');
     if (!state.sessions.length) {
         sessEl.innerHTML = '<span class="empty">Waiting for Claude sessions...</span>';
     } else {
         sessEl.innerHTML = state.sessions.map(s => {
             const w = waitingIds.has(s.sessionId);
+            const label = clientLabel(s.client, s.tmuxTarget);
             return `<div class="session${w?' waiting':''}">
                 <div class="dot${w?' waiting':''}"></div>
+                ${icon(s.agent || 'claude', 'sicon')}
+                ${icon(s.client || 'terminal', 'sicon')}
                 <span class="sname">${esc(s.project)}</span>
-                <span class="starget">${esc(s.tmuxTarget)}</span>
+                <span class="slabel">${esc(label)}</span>
+                <button class="sremove" onclick="removeSession('${esc(s.sessionId)}')" title="Remove">&#x2715;</button>
             </div>`;
         }).join('');
     }
 
-    // notifications
     const nEl = document.getElementById('notifs');
     document.getElementById('dismiss-all').style.display = state.notifications.length ? '' : 'none';
     if (!state.notifications.length) {
         nEl.innerHTML = '<span class="empty">All clear.</span>';
     } else {
-        nEl.innerHTML = state.notifications.map(n => `
+        nEl.innerHTML = state.notifications.map(n => {
+            const label = clientLabel(n.client, n.tmuxTarget);
+            return `
             <div class="notif" id="n-${n.id}">
-                <div>
-                    <div class="nmeta">${esc(n.project)} &nbsp;·&nbsp; ${ago(n.receivedAt)} &nbsp;·&nbsp; ${esc(n.hookType)}</div>
+                <div class="nleft">
+                    <div class="ncontext">
+                        ${icon(n.agent || 'claude', 'nicon')}
+                        ${icon(n.client || 'terminal', 'nicon')}
+                        <span class="nlabel">${esc(label)}</span>
+                    </div>
+                    <div class="nheader">${esc(n.project)} &nbsp;·&nbsp; ${esc(n.hookType)}</div>
                     <div class="nmsg">${esc(n.message)}</div>
                 </div>
                 <div class="nactions">
+                    <span class="ntime">${ago(n.receivedAt)}</span>
                     <button class="bdismiss" onclick="dismiss('${n.id}')">Dismiss</button>
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
     }
 
     if (count > prevCount) chime();
     prevCount = count;
 }
 
+async function removeSession(id) { await fetch(`/session/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
 async function dismiss(id) { await fetch(`/dismiss/${id}`, { method: 'POST' }); }
 async function dismissAll() { await fetch('/dismiss-all', { method: 'POST' }); }
 
