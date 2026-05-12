@@ -31,6 +31,7 @@ tmux list-panes -a -F '#{pane_id}  #{session_name}:#{window_index}.#{pane_index}
 ```
 
 Output will look like:
+
 ```
 %0  work:0.0
 %1  work:0.1
@@ -49,112 +50,14 @@ Expected: pane `%2` flashes red, notification appears in the dashboard labelled 
 
 ---
 
-## Phase 4 — Test the hook script directly
+## Phase 4 — Install hooks and wire up a real session
 
-### tmux
+See the guide for your environment:
 
-```bash
-echo '{
-  "session_id": "hook-test",
-  "message": "Fired from the actual hook script",
-  "hook_event_name": "Notification",
-  "cwd": "/Users/scott/Projects/my-api"
-}' | bash hooks/tmux/notify-claude.sh
-```
-
-### macOS / Linux / WSL (non-tmux)
-
-```bash
-echo '{
-  "session_id": "hook-test",
-  "message": "Fired from the actual hook script",
-  "hook_event_name": "Notification",
-  "cwd": "/Users/scott/Projects/my-api"
-}' | bash hooks/linux-mac-wsl/notify-claude.sh
-```
-
-Expected: OS notification fires, notification appears in the dashboard.
-
----
-
-## Phase 5 — Wire up real Claude Code hooks
-
-Pick the subfolder that matches your environment:
-
-```bash
-mkdir -p ~/.claude/hooks
-
-# tmux
-cp hooks/tmux/notify-claude.sh ~/.claude/hooks/notify-claude.sh
-chmod +x ~/.claude/hooks/notify-claude.sh
-
-# macOS / Linux / WSL
-cp hooks/linux-mac-wsl/notify-claude.sh ~/.claude/hooks/notify-claude.sh
-chmod +x ~/.claude/hooks/notify-claude.sh
-```
-
-Add to `~/.claude/settings.json` (merge with existing content):
-
-```json
-{
-  "hooks": {
-    "PermissionRequest": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
-    ],
-    "Notification": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
-    ],
-    "Stop": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.sh" }] }
-    ]
-  }
-}
-```
-
-Start Claude in your terminal. Any time it stops or sends a notification, the dashboard fires.
-
----
-
-## Phase 6 — Wire up Copilot CLI hooks
-
-```bash
-mkdir -p ~/.copilot/hooks
-
-# tmux
-cp hooks/tmux/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
-chmod +x ~/.copilot/hooks/notify-copilot.sh
-
-# macOS / Linux / WSL
-cp hooks/linux-mac-wsl/notify-copilot.sh ~/.copilot/hooks/notify-copilot.sh
-chmod +x ~/.copilot/hooks/notify-copilot.sh
-```
-
-Copy a `hooks.json` to your home directory:
-
-```bash
-cp .github/hooks/hooks.json ~/.copilot/hooks/hooks.json
-```
-
-Test the Copilot hook script directly:
-
-```bash
-echo '{
-  "sessionId": "copilot-abc123",
-  "cwd": "/Users/scott/Projects/my-api"
-}' | HOOK_EVENT=agentStop bash ~/.copilot/hooks/notify-copilot.sh
-```
-
-Expected: notification appears in the dashboard with message "Copilot finished".
-
----
-
-## Useful tmux keystrokes
-
-| Keys | Action |
+| Environment | Guide |
 |---|---|
-| `tmux new -s work` | New named session |
-| `Ctrl+b %` | Split pane vertically |
-| `Ctrl+b "` | Split pane horizontally |
-| `Ctrl+b →` `←` `↑` `↓` | Move between panes |
-| `Ctrl+b z` | Zoom current pane (toggle fullscreen) |
-| `Ctrl+b d` | Detach session |
+| tmux (any OS) | [docs/setup/configure-tmux.md](configure-tmux.md) |
+| macOS / Linux / WSL (non-tmux) | [docs/setup/configure-linux-mac-wsl.md](configure-linux-mac-wsl.md) |
+| Windows native PowerShell | [docs/setup/configure-windows.md](configure-windows.md) |
+
+Each guide includes copy commands for both Claude and Copilot, the hook config files to use, and commands to test the hook script directly before wiring it to a live session.

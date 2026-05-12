@@ -3,7 +3,8 @@
 # HOOK_EVENT must be set in the hooks.json env field.
 # Reads JSON from stdin, sends a Windows notification, posts to the tmux-alerts server.
 
-$input_json = $input | Out-String | ConvertFrom-Json
+$raw = [Console]::In.ReadToEnd()
+$input_json = if ($raw.Trim()) { $raw | ConvertFrom-Json } else { [PSCustomObject]@{} }
 
 $sessionId = if ($input_json.sessionId) { $input_json.sessionId }
              elseif ($input_json.session_id) { $input_json.session_id }
@@ -20,14 +21,14 @@ $message = switch ($hookType) {
     default             { "Copilot hook fired" }
 }
 
-$client = if ($env:TERM_PROGRAM -eq "vscode") { "vscode" } else { "terminal" }
+$client = if ($env:TERM_PROGRAM -eq "vscode" -or $env:VSCODE_PPID -or $env:VSCODE_INJECTION_UUID) { "vscode" } else { "terminal" }
 
 # Windows balloon tip notification (no external dependencies).
 try {
     Add-Type -AssemblyName System.Windows.Forms
     $n = New-Object System.Windows.Forms.NotifyIcon
     $n.Icon = [System.Drawing.SystemIcons]::Application
-    $n.BalloonTipTitle = "tmux-alerts — $project"
+    $n.BalloonTipTitle = "tmux-alerts - $project"
     $n.BalloonTipText  = $message
     $n.Visible = $true
     $n.ShowBalloonTip(3000)

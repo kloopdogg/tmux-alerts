@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "powershell": "~/.copilot/hooks/notify-copilot.ps1",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "agentStop" }
+      }
+    ],
+    "notification": [
+      {
+        "type": "command",
+        "powershell": "~/.copilot/hooks/notify-copilot.ps1",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "notification" }
+      }
+    ],
+    "permissionRequest": [
+      {
+        "type": "command",
+        "powershell": "~/.copilot/hooks/notify-copilot.ps1",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "permissionRequest" }
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "powershell": "~/.copilot/hooks/notify-copilot.ps1",
+        "timeoutSec": 5,
+        "env": { "HOOK_EVENT": "errorOccurred" }
+      }
+    ]
+  }
+}

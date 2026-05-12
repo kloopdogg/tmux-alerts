@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.ps1", "shell": "powershell" }]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.ps1", "shell": "powershell" }]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-claude.ps1", "shell": "powershell" }]
+      }
+    ]
+  }
+}
